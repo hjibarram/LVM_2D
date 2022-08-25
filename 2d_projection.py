@@ -271,8 +271,8 @@ def sycall(comand):
     os.system(comand)
 
 def get_focus(dir1='',name='focus_lvm',dsx=0.5,dsy=0.5,rho=0.05,vt1=0.3,vt2=0.3,vt3=0.1,lt=1500.):
-    nf=4080#4224
-    ng=4120#4352
+    nf=4120#4080#4224
+    ng=4080##4352
     arrayf=np.zeros([3,nf,ng])
     xo=nf/2
     yo=ng/2
@@ -285,6 +285,7 @@ def get_focus(dir1='',name='focus_lvm',dsx=0.5,dsy=0.5,rho=0.05,vt1=0.3,vt2=0.3,
             arrayf[0,i,j]=val1
             arrayf[1,i,j]=val2
             arrayf[2,i,j]=val3    
+    arrayf=arrayf.T        
     h1=fits.PrimaryHDU(arrayf)
     hlist=fits.HDUList([h1])
     hlist.update_extend()
@@ -295,22 +296,22 @@ def get_focus(dir1='',name='focus_lvm',dsx=0.5,dsy=0.5,rho=0.05,vt1=0.3,vt2=0.3,
 def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam=1,dir1='./',nfib=500,mjd='00000',plate='0000',exp=0,flb='s',expt=900.0,ra0=0.0,dec0=0.0,expof=0.0):       
     nx,ny=spec.shape
     cam=str(int(cam))
-    nf=4080#4224
-    ng=4120#4352
+    nf=4120#4080#4224
+    ng=4080#4120#4352
     arrayf_1=np.zeros([nf,ng])
     b_arrayf_1=np.zeros([nf,ng])
     if type == "blue":
-        p_arrayf_1=np.zeros([4012,4096])#4112,4096
-        f_arrayf_1=np.ones([4012,4096])
-        b1_arrayf_1=np.zeros([4012,4096])
+        p_arrayf_1=np.zeros([nf,ng])#4112,4096
+        f_arrayf_1=np.ones([nf,ng])
+        b1_arrayf_1=np.zeros([nf,ng])
     if type == "red":
-        p_arrayf_1=np.zeros([4128,4114])    
-        f_arrayf_1=np.ones([4128,4114])
-        b1_arrayf_1=np.zeros([4128,4114])
+        p_arrayf_1=np.zeros([nf,ng])    
+        f_arrayf_1=np.ones([nf,ng])
+        b1_arrayf_1=np.zeros([nf,ng])
     if type == "ir":
-        p_arrayf_1=np.zeros([4128,4114])    
-        f_arrayf_1=np.ones([4128,4114])
-        b1_arrayf_1=np.zeros([4128,4114])    
+        p_arrayf_1=np.zeros([nf,ng])    
+        f_arrayf_1=np.ones([nf,ng])
+        b1_arrayf_1=np.zeros([nf,ng])    
     nt=np.argsort(fibf)
     if type == "blue":
         let=800#800
@@ -319,6 +320,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         fibs1,bunds1=read_op_fib(1,'b'+cam)
         try:
             focus=fits.getdata('libs/focus_lvm_blue'+cam+'.fits.gz', 0, header=False)
+            focus=focus.T
             print('Using focus file')
         except:
             focus=np.ones([3,nf,ng])
@@ -332,6 +334,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         fibs1,bunds1=read_op_fib(1,'r'+cam)
         try:
             focus=fits.getdata('libs/focus_lvm_red'+cam+'.fits.gz', 0, header=False)
+            focus=focus.T
             print('Using focus file')
         except:
             focus=np.ones([3,nf,ng])
@@ -345,6 +348,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         fibs1,bunds1=read_op_fib(1,'z'+cam)    
         try:
             focus=fits.getdata('libs/focus_lvm_ir'+cam+'.fits.gz', 0, header=False)
+            focus=focus.T
             print('Using focus file')
         except:
             focus=np.ones([3,nf,ng])
@@ -444,45 +448,52 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         #print(spec_t.shape,arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2].shape)
         arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_t+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]    
     
+    nf=4120#4080#4224
+    ng=4080#4120#4352
     if type == "blue":
         bias_1=2171.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.048, 1.048, 1.018, 1.006]
-        arrayf_1[0:2039,0:2059]=arrayf_1[0:2039,0:2059]/gain_1[0]+ran.randn(2039,2059)*sig_1+bias_1+35.0#2206  0:2111,0:2175
-        arrayf_1[2039:4080,0:2059]=arrayf_1[2039:4080,0:2059]/gain_1[1]+ran.randn(2041,2059)*sig_1+bias_1+0.0#2171       
-        arrayf_1[0:2039,2059:4120]=arrayf_1[0:2039,2059:4120]/gain_1[2]+ran.randn(2039,2061)*sig_1+bias_1-30.0#2141
-        arrayf_1[2039:4080,2059:4120]=arrayf_1[2039:4080,2059:4120]/gain_1[3]+ran.randn(2041,2061)*sig_1+bias_1+129.0#2300
-        b_arrayf_1[0:2039,0:2059]=ran.randn(2039,2059)*sig_1+bias_1+35.0#2206
-        b_arrayf_1[2039:4080,0:2059]=ran.randn(2041,2059)*sig_1+bias_1+0.0#2171       
-        b_arrayf_1[0:2039,2059:4120]=ran.randn(2039,2061)*sig_1+bias_1-30.0#2141
-        b_arrayf_1[2039:4080,2059:4120]=ran.randn(2041,2061)*sig_1+bias_1+129.0#2300
-        b1_arrayf_1=ran.randn(4112,4096)*sig_1+2.0
+        arrayf_1[0:2059,0:2039]=arrayf_1[0:2059,0:2039]/gain_1[0]+ran.randn(2059,2039)*sig_1+bias_1+35.0#2206  0:2111,0:2175
+        arrayf_1[2059:4120,0:2039]=arrayf_1[2059:4120,0:2039]/gain_1[1]+ran.randn(2061,2039)*sig_1+bias_1+0.0#2171       
+        arrayf_1[0:2059,2039:4080]=arrayf_1[0:2059,2039:4080]/gain_1[2]+ran.randn(2059,2041)*sig_1+bias_1-30.0#2141
+        arrayf_1[2059:4120,2039:4080]=arrayf_1[2059:4120,2039:4080]/gain_1[3]+ran.randn(2061,2041)*sig_1+bias_1+129.0#2300
+        b_arrayf_1[0:2059,0:2039]=ran.randn(2059,2039)*sig_1+bias_1+35.0#2206
+        b_arrayf_1[2059:4120,0:2039]=ran.randn(2061,2039)*sig_1+bias_1+0.0#2171       
+        b_arrayf_1[0:2059,2039:4080]=ran.randn(2059,2041)*sig_1+bias_1-30.0#2141
+        b_arrayf_1[2059:4120,2039:4080]=ran.randn(2061,2041)*sig_1+bias_1+129.0#2300
+        b1_arrayf_1=ran.randn(4120,4080)*sig_1+2.0
     if type == "red":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_1[0:2039,0:2059]=arrayf_1[0:2039,0:2059]/gain_1[0]+ran.randn(2039,2059)*sig_1+bias_1+5.0#+2495-4.0
-        arrayf_1[2039:4080,0:2059]=arrayf_1[2039:4080,0:2059]/gain_1[1]+ran.randn(2041,2059)*sig_1+bias_1-4.0#2490-4.0
-        arrayf_1[0:2039,2059:4120]=arrayf_1[0:2039,2059:4120]/gain_1[2]+ran.randn(2039,2061)*sig_1+bias_1+55.0#+2545-4.0
-        arrayf_1[2039:4080,2059:4120]=arrayf_1[2039:4080,2059:4120]/gain_1[3]+ran.randn(2041,2061)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b_arrayf_1[0:2039,0:2059]=ran.randn(2039,2059)*sig_1+bias_1+5.0#+2495-4.0
-        b_arrayf_1[2039:4080,0:2059]=ran.randn(2041,2059)*sig_1+bias_1-4.0#2490-4.0
-        b_arrayf_1[0:2039,2059:4120]=ran.randn(2039,2061)*sig_1+bias_1+55.0#+2545-4.0
-        b_arrayf_1[2039:4080,2059:4120]=ran.randn(2041,2061)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b1_arrayf_1=ran.randn(4128,4114)*sig_1+2.0
+        arrayf_1[0:2059,0:2039]=arrayf_1[0:2059,0:2039]/gain_1[0]+ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
+        arrayf_1[2059:4120,0:2039]=arrayf_1[2059:4120,0:2039]/gain_1[1]+ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
+        arrayf_1[0:2059,2039:4080]=arrayf_1[0:2059,2039:4080]/gain_1[2]+ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
+        arrayf_1[2059:4120,2039:4080]=arrayf_1[2059:4120,2039:4080]/gain_1[3]+ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        b_arrayf_1[0:2059,0:2039]=ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
+        b_arrayf_1[2059:4120,0:2039]=ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
+        b_arrayf_1[0:2059,2039:4080]=ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
+        b_arrayf_1[2059:4120,2039:4080]=ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        b1_arrayf_1=ran.randn(4120,4080)*sig_1+2.0
     if type == "ir":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_1[0:2039,0:2059]=arrayf_1[0:2039,0:2059]/gain_1[0]+ran.randn(2039,2059)*sig_1+bias_1+5.0#+2495-4.0
-        arrayf_1[2039:4080,0:2059]=arrayf_1[2039:4080,0:2059]/gain_1[1]+ran.randn(2041,2059)*sig_1+bias_1-4.0#2490-4.0
-        arrayf_1[0:2039,2059:4120]=arrayf_1[0:2039,2059:4120]/gain_1[2]+ran.randn(2039,2061)*sig_1+bias_1+55.0#+2545-4.0
-        arrayf_1[2039:4080,2059:4120]=arrayf_1[2039:4080,2059:4120]/gain_1[3]+ran.randn(2041,2061)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b_arrayf_1[0:2039,0:2059]=ran.randn(2039,2059)*sig_1+bias_1+5.0#+2495-4.0
-        b_arrayf_1[2039:4080,0:2059]=ran.randn(2041,2059)*sig_1+bias_1-4.0#2490-4.0
-        b_arrayf_1[0:2039,2059:4120]=ran.randn(2039,2061)*sig_1+bias_1+55.0#+2545-4.0
-        b_arrayf_1[2039:4080,2059:4120]=ran.randn(2041,2061)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b1_arrayf_1=ran.randn(4128,4114)*sig_1+2.0    
+        arrayf_1[0:2059,0:2039]=arrayf_1[0:2059,0:2039]/gain_1[0]+ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
+        arrayf_1[2059:4120,0:2039]=arrayf_1[2059:4120,0:2039]/gain_1[1]+ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
+        arrayf_1[0:2059,2039:4080]=arrayf_1[0:2059,2039:4080]/gain_1[2]+ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
+        arrayf_1[2059:4120,2039:4080]=arrayf_1[2059:4120,2039:4080]/gain_1[3]+ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        b_arrayf_1[0:2059,0:2039]=ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
+        b_arrayf_1[2059:4120,0:2039]=ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
+        b_arrayf_1[0:2059,2039:4080]=ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
+        b_arrayf_1[2059:4120,2039:4080]=ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        b1_arrayf_1=ran.randn(4120,4080)*sig_1+2.0    
+    
+    arrayf_1=arrayf_1.T
+    b_arrayf_1=b_arrayf_1.T
+    b1_arrayf_1=b1_arrayf_1.T
+    f_arrayf_1=f_arrayf_1.T
     
     sycall('mkdir -p '+dir1+'lvm')        
     dir0='lvm/'+str(mjd)#+'/'+plate.split('-')[0]#+'-'+mjd        
@@ -510,38 +521,38 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
     if flb == 'f':
         sycall('mkdir -p '+dir1+'lvm/flats')
         sycall('mkdir -p '+dir1+'lvm/biases')
-        h1=pyf.PrimaryHDU(b_arrayf_1)
+        h1=fits.PrimaryHDU(b_arrayf_1)
         h=h1.header
         h["NAXIS"]=2 
         h["NAXIS1"]=ng
         h["NAXIS2"]=nf
         h=row_data_header2(h,mjd)
-        hlist=pyf.HDUList([h1])
+        hlist=fits.HDUList([h1])
         hlist.update_extend()
-        out_fit=dir1+'lvm/biases/boss_pixbias-'+str(mjd)+'-'+ty+cam+'.fits' 
+        out_fit=dir1+'lvm/biases/lvm_pixbias-'+str(mjd)+'-'+ty+cam+'.fits' 
         wfits_ext(out_fit,hlist)
         sycall('gzip -f '+out_fit)
     
 
-        h1=pyf.PrimaryHDU(f_arrayf_1)
+        h1=fits.PrimaryHDU(f_arrayf_1)
         h=h1.header
-        hlist=pyf.HDUList([h1])
+        hlist=fits.HDUList([h1])
         hlist.update_extend()
         out_fit=dir1+'lvm/flats/pixflatave-'+str(mjd)+'-'+ty+cam+'.fits' 
         wfits_ext(out_fit,hlist)
         sycall('gzip -f '+out_fit) 
         
-        h1=pyf.PrimaryHDU(p_arrayf_1)
+        h1=fits.PrimaryHDU(p_arrayf_1)
         h=h1.header
-        hlist=pyf.HDUList([h1])
+        hlist=fits.HDUList([h1])
         hlist.update_extend()
         out_fit=dir1+'lvm/flats/badpixels-'+str(mjd)+'-'+ty+cam+'.fits' 
         wfits_ext(out_fit,hlist)
         sycall('gzip -f '+out_fit)
         
-        h1=pyf.PrimaryHDU(b1_arrayf_1)
+        h1=fits.PrimaryHDU(b1_arrayf_1)
         h=h1.header
-        hlist=pyf.HDUList([h1])
+        hlist=fits.HDUList([h1])
         hlist.update_extend()
         out_fit=dir1+'lvm/biases/pixbiasave-00001'+'-'+ty+cam+'.fits'
         wfits_ext(out_fit,hlist)
@@ -690,8 +701,101 @@ def row_data_header_bhm(h,plate,mjd,exp,typ,flb='s',ra=0.0,dec=0.0,azim=180.0,al
     h["DATASUM"] = ('516485492','data unit checksum updated 2016-05-10T06:58:02')                                                                          
     return h
 
+def row_data_header2(h,mjd):                                                
+    h['BSCALE']  = 1                                                  
+    h['BZERO']   = 32768                                                  
+    h['EXTEND']  =  True                                                 
+    h['TELESCOP']= 'SDSS 2-5m'                                                           
+    h['FILENAME']= 'sdR-b1-00104337.fit'                                                 
+    h['CAMERAS'] = 'b1      '                                                            
+    h['EXPOSURE']=  104337                                                  
+    h['DAQVER']  = '1.2.7   '                                                            
+    h['CAMDAQ']  = '1.2.0:28'                                                            
+    h['ERRCNT']  = 'NONE    '                                                            
+    h['SYNCERR'] = 'NONE    '                                                            
+    h['SLINES']  = 'NONE    '                                                            
+    h['PIXERR']  = 'NONE    '                                                            
+    h['PLINES']  = 'NONE    '                                                            
+    h['FLAVOR']  = ('bias    ','exposure type, SDSS spectro style')              
+    h['BOSSVER'] = ('branch_jme-rewrite+svn105840M','ICC version')                         
+    h['MJD']     = (np.int(mjd),'APO MJD day at start of exposure')  
+    h['TAI-BEG'] = ((np.float(mjd)+0.25)*24.0*3600.0,'MJD(TAI) seconds at start of exposure')        
+    h['DATE-OBS']= ('2012-03-20T06:00:00','TAI date at start of exposure')               
+    h['FF']      = ('0 0 0 0 ','FF lamps 1:on 0:0ff')                           
+    h['NE']      = ('0 0 0 0 ','NE lamps 1:on 0:0ff')                         
+    h['HGCD']    = ('0 0 0 0 ','HGCD lamps 1:on 0:0ff')       
+    h['FFS']     = ('1 1 1 1 1 1 1 1','Flatfield Screen 1:closed 0:open')         
+    h['OBJSYS']  = ('Mount   ','The TCC objSys')             
+    h['RA']      = ('NaN     ','Telescope is not tracking the sky')   
+    h['DEC']     = ('NaN     ','Telescope is not tracking the sky')            
+    h['RADEG']   = ('NaN     ','Telescope is not tracking the sky')            
+    h['DECDEG']  = ('NaN     ','Telescope is not tracking the sky')            
+    h['ROTTYPE'] = ('Mount   ','Rotator request type')        
+    h['ROTPOS']  = (0.0 ,'Rotator request position (deg)')                 
+    h['BOREOFFX']= (0.0 ,'TCC Boresight offset, deg')               
+    h['BOREOFFY']= (0.0 ,'TCC Boresight offset, deg')                     
+    h['ARCOFFX'] = (0.0 ,'TCC ObjArcOff, deg')                    
+    h['ARCOFFY'] = (0.0 ,'TCC ObjArcOff, deg')                            
+    h['OBJOFFX'] = (0.0 ,'TCC ObjOff, deg')                           
+    h['OBJOFFY'] = (0.0 ,'TCC ObjOff, deg')                            
+    h['CALOFFX'] = (0.0 ,'TCC CalibOff, deg')                             
+    h['CALOFFY'] = (0.0 ,'TCC CalibOff, deg')                             
+    h['CALOFFR'] = (0.0 ,'TCC CalibOff, deg')                             
+    h['GUIDOFFX']= (0.0 ,'TCC GuideOff, deg')                             
+    h['GUIDOFFY']= (0.0 ,'TCC GuideOff, deg')                             
+    h['GUIDOFFR']= (0.0 ,'TCC GuideOff, deg')             
+    h['AZ']      = (121.0 ,'Azimuth axis pos. (approx, deg)')               
+    h['ALT']     = (30.0 ,'Altitude axis pos. (approx, deg)')               
+    h['IPA']     = (0.0 ,'Rotator axis pos. (approx, deg)')              
+    h['FOCUS']   = (0.0 ,'User-specified focus offset (um)')             
+    h['M2PISTON']= (1256.77 ,'TCC SecOrient')                  
+    h['M2XTILT'] = (-3.21 ,'TCC SecOrient')                               
+    h['M2YTILT'] = (-10.45 ,'TCC SecOrient')                                
+    h['M2XTRAN'] = (9.24 ,'TCC SecOrient')                              
+    h['M2YTRAN'] = (234.17 ,'TCC SecOrient')                                 
+    h['M1PISTON']= (0.0 ,'TCC PrimOrient')                           
+    h['M1XTILT'] = (-3.04 ,'TCC PrimOrient')                                 
+    h['M1YTILT'] = (5.26 ,'TCC PrimOrient')                             
+    h['M1XTRAN'] = (277.7 ,'TCC PrimOrient')                          
+    h['M1YTRAN'] = (178.07 ,'TCC PrimOrient')                                 
+    h['SCALE']   = (1.0 ,'User-specified scale factor')                   
+    h['NAME']    = ('3521-55170-01','The name of the currently loaded plate')   
+    h['PLATEID'] = (3521 ,'The currently loaded plate')
+    h['CARTID']  = (11 ,'The currently loaded cartridge')                 
+    h['MAPID']   = (1 ,'The mapping version of the loaded plate')      
+    h['POINTING']= ('A       ','The currently specified pointing')               
+    h['GUIDER1'] = ('proc-gimg-0135.fits','The first guider image')                        
+    h['GUIDERN'] = ('proc-gimg-0135.fits','The last guider image')                     
+    h['EXPTIME'] = (0.08755397796630859,'exposure time')              
+    h['DATASUM'] = '0000000000000000'                                                    
+    h['COMMENT'] = 'failed to make SPA card from None'                                     
+    h['EXPID00'] = ('b1-00104337','ID string for exposure 00')                      
+    h['EXPID01'] = ('b1-00104338','ID string for exposure 01')                      
+    h['EXPID02'] = ('b1-00104339','ID string for exposure 02')                      
+    h['EXPID03'] = ('b1-00104340','ID string for exposure 03')                      
+    h['EXPID04'] = ('b1-00104341','ID string for exposure 04')                      
+    h['EXPID05'] = ('b1-00104342','ID string for exposure 05')                      
+    h['EXPID06'] = ('b1-00104343','ID string for exposure 06')                      
+    h['EXPID07'] = ('b1-00104344','ID string for exposure 07')                       
+    h['EXPID08'] = ('b1-00104345','ID string for exposure 08')                       
+    h['EXPID09'] = ('b1-00104346','ID string for exposure 09')                       
+    h['EXPID10'] = ('b1-00104347','ID string for exposure 10')                       
+    h['EXPID11'] = ('b1-00104348','ID string for exposure 11')                       
+    h['EXPID12'] = ('b1-00104349','ID string for exposure 12')                       
+    h['EXPID13'] = ('b1-00104350','ID string for exposure 13')                       
+    h['EXPID14'] = ('b1-00104351','ID string for exposure 14')                       
+    h['EXPID15'] = ('b1-00104352','ID string for exposure 15')                       
+    h['EXPID16'] = ('b1-00104353','ID string for exposure 16')                       
+    h['EXPID17'] = ('b1-00104354','ID string for exposure 17')                       
+    h['EXPID18'] = ('b1-00104355','ID string for exposure 18')                       
+    h['EXPID19'] = ('b1-00104356','ID string for exposure 19')                       
+    h['EXPID20'] = ('b1-00104357','ID string for exposure 20')                       
+    h['EXPID21'] = ('b1-00104358','ID string for exposure 21')                       
+    h['EXPID22'] = ('b1-00104359','ID string for exposure 22') 
+    return h
+
     
-def run_2d(blu_sp1,fibf,base_name='test',dir1='',nfib=500,type="blue",cam=1,expN=0,expt=900,ra=0,dec=0,mjd='45223',field_name='00000'):
+def run_2d(blu_sp1,fibf,base_name='test',dir1='',nfib=648,flb='s',type="blue",n_cr=150,cam=1,expN=0,expt=900,ra=0,dec=0,mjd='45223',field_name='00000'):
     expof=0
-    raw_exp_bhm(blu_sp1,fibf,base_name,fc=[0.88,0.94],n_cr=600,cam=cam,nfib=nfib,type=type,dir1=dir1,mjd=mjd,plate=field_name,flb='s',exp=expN,expt=expt,ra0=ra,dec0=dec,expof=expof)
+    raw_exp_bhm(blu_sp1,fibf,base_name,fc=[0.88,0.94],n_cr=600,cam=cam,nfib=nfib,type=type,flb=flb,dir1=dir1,n_cr=n_cr,mjd=mjd,plate=field_name,exp=expN,expt=expt,ra0=ra,dec0=dec,expof=expof)
     
