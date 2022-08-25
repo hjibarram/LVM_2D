@@ -307,7 +307,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         p_arrayf_1=np.zeros([4128,4114])    
         f_arrayf_1=np.ones([4128,4114])
         b1_arrayf_1=np.zeros([4128,4114])
-    if type == "nir":
+    if type == "ir":
         p_arrayf_1=np.zeros([4128,4114])    
         f_arrayf_1=np.ones([4128,4114])
         b1_arrayf_1=np.zeros([4128,4114])    
@@ -338,13 +338,13 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
             focus[0,:,:]=1.0
             focus[1,:,:]=0.9
             focus[2,:,:]=0.0
-    if type == "nir":
+    if type == "ir":
         let=800#620
         let2=300
         ty='z'
         fibs1,bunds1=read_op_fib(1,'z'+cam)    
         try:
-            focus=fits.getdata('libs/focus_lvm_nir'+cam+'.fits.gz', 0, header=False)
+            focus=fits.getdata('libs/focus_lvm_ir'+cam+'.fits.gz', 0, header=False)
             print('Using focus file')
         except:
             focus=np.ones([3,nf,ng])
@@ -389,7 +389,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
                     dt=36.0+bunds1[0]#+36.6-2.0#+6.578*4.5#+280#bunds1[0]+
                 if type == 'red':
                     dt=36.0+bunds1[0]#+36.6-18.3+9.15
-                if type == 'nir':
+                if type == 'ir':
                     dt=36.0+bunds1[0]#+36.6-18.3+9.15
                 dg=0.0
         else:
@@ -470,7 +470,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         b_arrayf_1[0:2039,2059:4120]=ran.randn(2039,2061)*sig_1+bias_1+55.0#+2545-4.0
         b_arrayf_1[2039:4080,2059:4120]=ran.randn(2041,2061)*sig_1+bias_1+100.0#246.0#2740-4.0
         b1_arrayf_1=ran.randn(4128,4114)*sig_1+2.0
-    if type == "nir":
+    if type == "ir":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
