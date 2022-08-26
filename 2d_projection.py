@@ -797,5 +797,5 @@ def row_data_header2(h,mjd):
     
 def run_2d(blu_sp1,fibf,base_name='test',dir1='',nfib=648,flb='s',type="blue",n_cr=150,cam=1,expN=0,expt=900,ra=0,dec=0,mjd='45223',field_name='00000'):
     expof=0
-    raw_exp_bhm(blu_sp1,fibf,base_name,fc=[0.88,0.94],n_cr=n_cr,cam=cam,nfib=nfib,type=type,flb=flb,dir1=dir1,n_cr=n_cr,mjd=mjd,plate=field_name,exp=expN,expt=expt,ra0=ra,dec0=dec,expof=expof)
+    raw_exp_bhm(blu_sp1,fibf,base_name,fc=[0.88,0.94],cam=cam,nfib=nfib,type=type,flb=flb,dir1=dir1,n_cr=n_cr,mjd=mjd,plate=field_name,exp=expN,expt=expt,ra0=ra,dec0=dec,expof=expof)
     
