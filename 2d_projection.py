@@ -29,6 +29,55 @@ import emcee
 from scipy.special import gamma, gammaincinv, gammainc
 from numpy import random as ran
 
+def ssp_extract_arc(wave_i,dir_tem="",col='b'):
+    file=dir_tem+"lamphgcdne.txt"
+    f=open(file,'r')
+    ints=[]
+    wave=[]
+    for line in f:
+        if not "#" in line:
+            data=line.replace('\n','').split(' ')
+            data=list(filter(None,data))
+            wave.extend([np.float(data[0])])
+            ints.extend([np.float(data[1])])
+    ints=np.array(ints)
+    wave=np.array(wave)
+    sgl=0.9
+    emi=np.zeros(len(wave_i))
+    for i in range(0, len(wave)):
+        emi=np.exp(-0.5*((wave_i-wave[i])/sgl)**2.0)*ints[i]+emi
+    emi=emi+5.0
+    
+    #file=dir_tem+"output18129.fits"
+    #[flux, hdr0]=gdata(file, 0, header=True)
+    #l0=hdr0['CRVAL1']
+    #dl=hdr0['CDELT1']
+    #wave=l0+np.arange(len(flux))*dl
+    #flux_c=interp1d(wave,flux,bounds_error=False,fill_value=0.)(wave_i)
+    #emi=flux_c*0.0+emi#*10.0
+    
+    if 'blue' in col:
+        file_ar=dir_tem+'arc_blue_lib.txt' 
+    if 'red' in col:
+        file_ar=dir_tem+'arc_red_lib.txt'
+    if 'ir' in col:
+        file_ar=dir_tem+'arc_nir_lib.txt'    
+    wave=[]
+    arc=[]
+    ft=open(file_ar,'r')
+    for line in ft:
+        data=line.replace('\n','').split(',')
+        data=list(filter(None,data))
+        wave.extend([np.float(data[0])])
+        arc.extend([np.float(data[1])])
+    ft.close()
+    arc=np.array(arc)
+    wave=np.array(wave)
+    flux_t=interp1d(wave,arc,bounds_error=False,fill_value=0.)(wave_i)
+    emi=flux_t+emi
+    return emi
+
+
 def cosmic_rays(arrayf,n_cr=100,d_cr=5):
     nf,ng=arrayf.shape
     array1=np.zeros([nf,ng])    
@@ -321,12 +370,14 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         try:
             focus=fits.getdata('libs/focus_lvm_blue'+cam+'.fits.gz', 0, header=False)
             focus=focus.T
-            print('Using focus file')
+            print('Using PSF file')
         except:
             focus=np.ones([3,nf,ng])
             focus[0,:,:]=1.0
             focus[1,:,:]=0.9
             focus[2,:,:]=0.0
+            print('Using default PSF =1 pixel')
+            #tta=0
     if type == "red":
         let=800#620
         let2=300
@@ -341,6 +392,8 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
             focus[0,:,:]=1.0
             focus[1,:,:]=0.9
             focus[2,:,:]=0.0
+            print('Using default PSF =1 pixel')
+            #tta=0
     if type == "ir":
         let=800#620
         let2=300
@@ -355,6 +408,8 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
             focus[0,:,:]=1.0
             focus[1,:,:]=0.9
             focus[2,:,:]=0.0
+            print('Using default PSF =1 pixel')
+            #tta=1
             
     for i in range(0, nfib):#len(fibf)):
         if '1' in cam:
@@ -405,26 +460,36 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         dy=np.int(np.round(dg))
         off=dy-dg
         dc=10.0
-        #nxt=np.int(dc*2+1)
-        #x_t=np.arange(nxt)*1.0-dc+off
-        #x_t=np.array([x_t]*nx)
-        #ds_t=np.array([dsi]*nxt).T
-        #At=np.array([spect]*nxt).T
-        #spec_t=np.exp(-0.5*(x_t/ds_t)**2.0)/(np.sqrt(2.0*np.pi)*ds_t)*At
+        
+        tta=0
+        if tta == 1:
+            nxt=np.int(dc*2+1)
+            x_t=np.arange(nxt)*1.0-dc+off
+            x_t=np.array([x_t]*nx)
+            ds_t=np.array([dsi]*nxt).T
+            At=np.array([spect]*nxt).T
+            spec_t=np.exp(-0.5*(x_t/ds_t)**2.0)/(np.sqrt(2.0*np.pi)*ds_t)*At
         
         dtt=0
-        tta=0
+        #if i==300:
+        #    tta=0
+        #else:
+        #    tta=1
+        #    spec_t[:,:]=0
         if tta == 0:
             nxt=np.int(dc*2+1)
             nyt=np.int(dc*2+1)
             x_t=np.arange(nxt)*1.0-dc+off
             y_t=np.arange(nyt)*1.0-dc
             x_t=np.array([x_t]*nyt)
+            y_t=np.array([y_t]*nxt).T
             At=np.array([spect]*nxt).T
             nsx,nsy=At.shape
             spec_tt=np.zeros([int(nsx+2*dc),nsy])
             #print(i,spec_tt.shape)
             for j in range(0, nx):
+            #j=400
+            #if j > 0:
                 xo=dx+j+int(dc)
                 yo=dy+int(dc)
                 ds_x=np.array([np.ones(nyt)*focus[0,xo,yo]]*nxt).T
@@ -433,6 +498,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
                 Att=np.array([np.ones(nyt)*spect[j]]*nxt).T
                 spec_ttt=np.exp(-0.5/(1-rho**2)*((x_t/ds_x)**2.0+(y_t/ds_y)**2.0-2*rho*(y_t/ds_y)*(x_t/ds_x)))/(2*np.pi*ds_x*ds_y*np.sqrt(1-rho**2))*Att
                 spec_tt[j:j+int(2*dc+1),0:int(2*dc+1)]=spec_ttt+spec_tt[j:j+int(2*dc+1),0:int(2*dc+1)]
+                #print(spec_tt)
             spec_t=spec_tt    
             dtt=int(dc)
         
