@@ -29,7 +29,7 @@ import emcee
 from scipy.special import gamma, gammaincinv, gammainc
 from numpy import random as ran
 
-def ssp_extract_arc(wave_i,dir_tem="",col='b'):
+def ssp_extract_arc(wave_i,dir_tem="",col='b',spec_in=False):
     file=dir_tem+"lamphgcdne.txt"
     f=open(file,'r')
     ints=[]
@@ -56,25 +56,26 @@ def ssp_extract_arc(wave_i,dir_tem="",col='b'):
     #flux_c=interp1d(wave,flux,bounds_error=False,fill_value=0.)(wave_i)
     #emi=flux_c*0.0+emi#*10.0
     
-    if 'blue' in col:
-        file_ar=dir_tem+'arc_blue_lib.txt' 
-    if 'red' in col:
-        file_ar=dir_tem+'arc_red_lib.txt'
-    if 'ir' in col:
-        file_ar=dir_tem+'arc_nir_lib.txt'    
-    wave=[]
-    arc=[]
-    ft=open(file_ar,'r')
-    for line in ft:
-        data=line.replace('\n','').split(',')
-        data=list(filter(None,data))
-        wave.extend([np.float(data[0])])
-        arc.extend([np.float(data[1])])
-    ft.close()
-    arc=np.array(arc)
-    wave=np.array(wave)
-    flux_t=interp1d(wave,arc,bounds_error=False,fill_value=0.)(wave_i)
-    emi=flux_t+emi
+    if spec_in:
+        if 'blue' in col:
+            file_ar=dir_tem+'arc_blue_lib.txt' 
+        if 'red' in col:
+            file_ar=dir_tem+'arc_red_lib.txt'
+        if 'ir' in col:
+            file_ar=dir_tem+'arc_nir_lib.txt'    
+        wave=[]
+        arc=[]
+        ft=open(file_ar,'r')
+        for line in ft:
+            data=line.replace('\n','').split(',')
+            data=list(filter(None,data))
+            wave.extend([np.float(data[0])])
+            arc.extend([np.float(data[1])])
+        ft.close()
+        arc=np.array(arc)
+        wave=np.array(wave)
+        flux_t=interp1d(wave,arc,bounds_error=False,fill_value=0.)(wave_i)
+        emi=flux_t+emi
     return emi
 
 
