@@ -572,6 +572,17 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
     arrayf_1=cosmic_rays(arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
     arrayf_1[np.where(arrayf_1 > 32767)]=32767.0
     arrayf_1=np.array(arrayf_1,dtype='int16')
+    
+    #b_arrayf_1=cosmic_rays(b_arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
+    b_arrayf_1=b_arrayf_1-32768.0
+    b_arrayf_1[np.where(b_arrayf_1 > 32767)]=32767.0
+    b_arrayf_1=np.array(b_arrayf_1,dtype='int16')
+    
+    #b1_arrayf_1=cosmic_rays(b1_arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
+    #b1_arrayf_1=b1_arrayf_1-32768.0
+    #b1_arrayf_1[np.where(b1_arrayf_1 > 32767)]=32767.0
+    b1_arrayf_1=np.array(b1_arrayf_1,dtype='int16')
+    
     h1=fits.PrimaryHDU(arrayf_1)
     h=h1.header
     h["NAXIS"]=2 
@@ -623,6 +634,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         hlist.update_extend()
         out_fit=dir1+'lvm/biases/pixbiasave-00001'+'-'+ty+cam+'.fits'
         wfits_ext(out_fit,hlist)
+        sycall('gzip -f '+out_fit)
 
 
 def row_data_header_bhm(h,plate,mjd,exp,typ,flb='s',ra=0.0,dec=0.0,azim=180.0,alt=90.0,expt=900.0,expof=0.0):  
