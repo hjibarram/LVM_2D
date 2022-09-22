@@ -343,7 +343,32 @@ def get_focus(dir1='',name='focus_lvm',dsx=0.5,dsy=0.5,rho=0.05,vt1=0.3,vt2=0.3,
     wfits_ext(out_fit,hlist)
     sycall('gzip -f '+out_fit)    
     
-def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam=1,dir1='./',nfib=500,mjd='00000',plate='0000',exp=0,flb='s',expt=900.0,ra0=0.0,dec0=0.0,expof=0.0):       
+def read_plugmap(dirf='libs/'):
+    f=open(dirf+'plugmap.dat')
+    typ=[]
+    ring=[]
+    fib=[]
+    slit=[]
+    idf=[]
+    for line in f:
+        if not 'type' in line:
+            data=line.replace('\n','').split(',')
+            data=list(filter(None,data))
+            typ.extend([data[0]])
+            ring.extend([int(data[1])])
+            fib.extend([int(data[2])])
+            slit.extend([data[3]])
+            idf.extend([int(data[4])])
+    typ=np.array(typ)
+    ring=np.array(ring)
+    fib=np.array(fib)
+    slit=np.array(slit)
+    idf=np.array(idf)
+    f.close()
+    return typ,ring,fib,slit,idf
+
+    
+def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam=1,dir1='./',nfib=500,mjd='00000',plate='0000',exp=0,flb='s',expt=900.0,ra0=0.0,dec0=0.0,expof=0.0):       
     nx,ny=spec.shape
     cam=str(int(cam))
     nf=4120#4080#4224
@@ -362,7 +387,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         p_arrayf_1=np.zeros([nf,ng])    
         f_arrayf_1=np.ones([nf,ng])
         b1_arrayf_1=np.zeros([nf,ng])    
-    nt=np.argsort(fibf)
+    #nt=np.argsort(fibf)
     if type == "blue":
         let=800#800
         let2=300
@@ -411,50 +436,56 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
             focus[2,:,:]=0.0
             print('Using default PSF =1 pixel')
             #tta=1
-            
+    
+    #Fiber mapping
+    typ,ringt,fib,slit,idf=read_plugmap(dirf='libs/')
+    fib_id=np.zeros(len(ring),dtype=int)
+    fib_id[:]=-1
+    for i in range(0, len(ring)):
+        nt2=np.where((ringt == ring[i]) & (typ == 'science') & (slit == 'slit'+cam) & (fib == position[i]))[0]
+        if len(nt2) > 0:
+            fib_id[i]=idf[nt2][0]
+    fib_idF=np.zeros(nfib,dtype=int)
+    fib_idF[:]=-1
+    for i in range(0, nfib):
+        nt=np.where(fib_id == i+1)[0]
+        if len(nt > 0):
+            fib_idF[i]=fibid[nt][0]
+    
+    #Wavelenght solution
+    pixel=np.arange(0,len(wave_s))
+    Pix=interp1d(wave_s,pixel,bounds_error=False,fill_value=-10)(wave)    
+    
     for i in range(0, nfib):#len(fibf)):
-        if '1' in cam:
-            init_v=0
-        elif '2' in cam:
-            init_v=nfib
-        elif '3' in cam:
-            init_v=nfib*2
-        else:
-            init_v=0
         it=i
-        iy=i+init_v
         r=let*(2.7+0.0)
         then=np.arcsin((it-(nfib/2.))/r)                 
-        dr=np.cos(then)*r-let*(1.7+0.0)
+        dr=np.cos(then)*r-let*(2.3+0.0)
         dx=np.int(np.round(dr))
-        #print(i,iy,nt[iy],fibf[nt[iy]])
-        spect=spec[:,nt[iy]]
-        npix1=100
-        npix2=100#200
-        y_e=spect[0]/np.float(npix1)*np.arange(npix1)
-        y_r=spect[::-1][0]/np.float(npix2)*np.arange(npix2)
-        spect=np.concatenate((y_e,spect))
-        spect=np.concatenate((spect,y_r[::-1]))
-        dx=dx-npix1-150        
+        if fib_idF[i] >= 0:
+            spect=spec[fib_idF[i],:]
+            tta=0
+        else:
+            spect=spec[:,0]*0
+            spect[:]=0
+            tta=1
         nx=len(spect)
-        dsi=np.ones(nx)#*0.5
+        dsi=np.ones(nx)
         indt=it % 36
         itt=np.int(it/36)
         if indt == 0:
             if it > 0:
-                #dt=16.4541#+np.abs(ran.randn(1)*0.7)-0.1
-                dt=bunds1[itt]+fibs1[itt]#
+                dt=bunds1[itt]+fibs1[itt]
             else:
                 if type == 'blue':
-                    dt=36.0+bunds1[0]#+36.6-2.0#+6.578*4.5#+280#bunds1[0]+
+                    dt=36.0+bunds1[0]
                 if type == 'red':
-                    dt=36.0+bunds1[0]#+36.6-18.3+9.15
+                    dt=36.0+bunds1[0]
                 if type == 'ir':
-                    dt=36.0+bunds1[0]#+36.6-18.3+9.15
+                    dt=36.0+bunds1[0]
                 dg=0.0
         else:
             dt=6.578
-            #print(fibs1)
             dt=fibs1[itt]
         dg=dg+dt
 
@@ -462,8 +493,7 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
         off=dy-dg
         dc=10.0
         
-        tta=0
-        if tta == 1:
+        if tta == 2:
             nxt=np.int(dc*2+1)
             x_t=np.arange(nxt)*1.0-dc+off
             x_t=np.array([x_t]*nx)
@@ -471,15 +501,12 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
             At=np.array([spect]*nxt).T
             spec_t=np.exp(-0.5*(x_t/ds_t)**2.0)/(np.sqrt(2.0*np.pi)*ds_t)*At
         
-        dtt=0
-        #if i==300:
-        #    tta=0
-        #else:
-        #    tta=1
-        #    spec_t[:,:]=0
+        #dtt=0
+        dtt=int(dc)
+        spec_res=np.zeros([int(nf-dx+dtt),int(dc*2+1)])
         if tta == 0:
-            nxt=np.int(dc*2+1)
-            nyt=np.int(dc*2+1)
+            nxt=int(dc*2+1)
+            nyt=int(dc*2+1)
             x_t=np.arange(nxt)*1.0-dc+off
             y_t=np.arange(nyt)*1.0-dc
             x_t=np.array([x_t]*nyt)
@@ -487,33 +514,40 @@ def raw_exp_bhm(spec,fibf,base_name,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam
             At=np.array([spect]*nxt).T
             nsx,nsy=At.shape
             spec_tt=np.zeros([int(nsx+2*dc),nsy])
-            #print(i,spec_tt.shape)
+            print(i)#,spec_tt.shape,nx,nsx,nsy)
             for j in range(0, nx):
-            #j=400
-            #if j > 0:
-                xo=dx+j+int(dc)
+                xo=dx+int(np.round(Pix[j]))#+int(dc)]
                 yo=dy+int(dc)
+                if xo >= nf:
+                    xo=nf-1
                 ds_x=np.array([np.ones(nyt)*focus[0,xo,yo]]*nxt).T
                 ds_y=np.array([np.ones(nyt)*focus[1,xo,yo]]*nxt).T
                 rho=np.array([np.ones(nyt)*focus[2,xo,yo]]*nxt).T
                 Att=np.array([np.ones(nyt)*spect[j]]*nxt).T
                 spec_ttt=np.exp(-0.5/(1-rho**2)*((x_t/ds_x)**2.0+(y_t/ds_y)**2.0-2*rho*(y_t/ds_y)*(x_t/ds_x)))/(2*np.pi*ds_x*ds_y*np.sqrt(1-rho**2))*Att
                 spec_tt[j:j+int(2*dc+1),0:int(2*dc+1)]=spec_ttt+spec_tt[j:j+int(2*dc+1),0:int(2*dc+1)]
-                #print(spec_tt)
             spec_t=spec_tt    
-            dtt=int(dc)
+        
+        #dtt=int(dc)
+        #spec_res=np.zeros([int(nf-dx+dtt),int(dc*2+1)])
+            for j in range(0, int(nf-dx+dtt)):
+                n1=np.where((Pix >= j) & (Pix < j+1))[0]
+                val=np.nansum(spec_t[n1,:],axis=0)
+                spec_res[j,:]=val    
         
         y1=0
         y2=nxt
         x1=0
-        x2=nx
+        x2=nf-dx-dtt#nx
         #print(i)
         #print(nxt)
         #print(spec_t.shape,dy+y2)
         #print(dx,nx)
+        #print(x1,x2,len(wave_s))
         #print(dx+x1-dtt,dx+x2+dtt,dy+y1,dy+y2)
         #print(spec_t.shape,arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2].shape)
-        arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_t+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]    
+        #arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_t+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]
+        arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_res+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]
     
     nf=4120#4080#4224
     ng=4080#4120#4352
@@ -874,7 +908,7 @@ def row_data_header2(h,mjd):
     return h
 
     
-def run_2d(blu_sp1,fibf,base_name='test',dir1='',nfib=648,flb='s',type="blue",n_cr=150,cam=1,expN=0,expt=900,ra=0,dec=0,mjd='45223',field_name='00000'):
+def run_2d(blu_sp1,fibid,ring,position,wave_s,wave,base_name='test',dir1='',nfib=648,flb='s',type="blue",n_cr=150,cam=1,expN=0,expt=900,ra=0,dec=0,mjd='45223',field_name='00000'):
     expof=0
-    raw_exp_bhm(blu_sp1,fibf,base_name,fc=[0.88,0.94],cam=cam,nfib=nfib,type=type,flb=flb,dir1=dir1,n_cr=n_cr,mjd=mjd,plate=field_name,exp=expN,expt=expt,ra0=ra,dec0=dec,expof=expof)
+    raw_exp_bhm(blu_sp1,fibid,ring,position,base_name,wave_s,wave,fc=[0.88,0.94],cam=cam,nfib=nfib,type=type,flb=flb,dir1=dir1,n_cr=n_cr,mjd=mjd,plate=field_name,exp=expN,expt=expt,ra0=ra,dec0=dec,expof=expof)
     
