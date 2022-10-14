@@ -321,7 +321,7 @@ def sycall(comand):
     os.system(comand)
 
 def get_focus(dir1='',name='focus_lvm',dsx=0.5,dsy=0.5,rho=0.05,vt1=0.3,vt2=0.3,vt3=0.1,lt=1500.):
-    nf=4120#4080#4224
+    nf=4080#4080#4224
     ng=4080##4352
     arrayf=np.zeros([3,nf,ng])
     xo=nf/2
@@ -371,21 +371,22 @@ def read_plugmap(dirf='libs/'):
 def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr=130,d_cr=5,type="blue",cam=1,dir1='./',nfib=500,mjd='00000',plate='0000',exp=0,flb='s',expt=900.0,ra0=0.0,dec0=0.0,expof=0.0):       
     nx,ny=spec.shape
     cam=str(int(cam))
-    nf=4120#4080#4224
+    nf=4080#120#4080#4224
     ng=4080#4120#4352
+    bias_r=20
     arrayf_1=np.zeros([nf,ng])
     b_arrayf_1=np.zeros([nf,ng])
     if type == "blue":
         p_arrayf_1=np.zeros([nf,ng])#4112,4096
-        f_arrayf_1=np.ones([nf,ng])
+        f_arrayf_1=np.ones([nf+bias_r+bias_r,ng])
         b1_arrayf_1=np.zeros([nf,ng])
     if type == "red":
         p_arrayf_1=np.zeros([nf,ng])    
-        f_arrayf_1=np.ones([nf,ng])
+        f_arrayf_1=np.ones([nf+bias_r+bias_r,ng])
         b1_arrayf_1=np.zeros([nf,ng])
     if type == "ir":
         p_arrayf_1=np.zeros([nf,ng])    
-        f_arrayf_1=np.ones([nf,ng])
+        f_arrayf_1=np.ones([nf+bias_r+bias_r,ng])
         b1_arrayf_1=np.zeros([nf,ng])    
     #nt=np.argsort(fibf)
     if type == "blue":
@@ -492,7 +493,8 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         dy=np.int(np.round(dg))
         off=dy-dg
         dc=10.0
-        
+        #tta=1
+        #nxt=int(dc*2+1)
         if tta == 2:
             nxt=np.int(dc*2+1)
             x_t=np.arange(nxt)*1.0-dc+off
@@ -514,7 +516,7 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
             At=np.array([spect]*nxt).T
             nsx,nsy=At.shape
             spec_tt=np.zeros([int(nsx+2*dc),nsy])
-            print(i)#,spec_tt.shape,nx,nsx,nsy)
+            #print(i)#,spec_tt.shape,nx,nsx,nsy)
             for j in range(0, nx):
                 xo=dx+int(np.round(Pix[j]))#+int(dc)]
                 yo=dy+int(dc)
@@ -549,70 +551,112 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         #arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_t+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]
         arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_res+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]
     
-    nf=4120#4080#4224
+    nf=4080#4080#4224
     ng=4080#4120#4352
     if type == "blue":
         bias_1=2171.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.048, 1.048, 1.018, 1.006]
-        arrayf_1[0:2059,0:2039]=arrayf_1[0:2059,0:2039]/gain_1[0]+ran.randn(2059,2039)*sig_1+bias_1+35.0#2206  0:2111,0:2175
-        arrayf_1[2059:4120,0:2039]=arrayf_1[2059:4120,0:2039]/gain_1[1]+ran.randn(2061,2039)*sig_1+bias_1+0.0#2171       
-        arrayf_1[0:2059,2039:4080]=arrayf_1[0:2059,2039:4080]/gain_1[2]+ran.randn(2059,2041)*sig_1+bias_1-30.0#2141
-        arrayf_1[2059:4120,2039:4080]=arrayf_1[2059:4120,2039:4080]/gain_1[3]+ran.randn(2061,2041)*sig_1+bias_1+129.0#2300
-        b_arrayf_1[0:2059,0:2039]=ran.randn(2059,2039)*sig_1+bias_1+35.0#2206
-        b_arrayf_1[2059:4120,0:2039]=ran.randn(2061,2039)*sig_1+bias_1+0.0#2171       
-        b_arrayf_1[0:2059,2039:4080]=ran.randn(2059,2041)*sig_1+bias_1-30.0#2141
-        b_arrayf_1[2059:4120,2039:4080]=ran.randn(2061,2041)*sig_1+bias_1+129.0#2300
-        b1_arrayf_1=ran.randn(4120,4080)*sig_1+2.0
+        arrayf_1[0:2039,0:2039]=arrayf_1[0:2039,0:2039]/gain_1[0]+ran.randn(2039,2039)*sig_1+bias_1+35.0#2206  0:2111,0:2175
+        arrayf_1[2039:4080,0:2039]=arrayf_1[2039:4080,0:2039]/gain_1[1]+ran.randn(2041,2039)*sig_1+bias_1+0.0#2171       
+        arrayf_1[0:2039,2039:4080]=arrayf_1[0:2039,2039:4080]/gain_1[2]+ran.randn(2039,2041)*sig_1+bias_1-30.0#2141
+        arrayf_1[2039:4080,2039:4080]=arrayf_1[2039:4080,2039:4080]/gain_1[3]+ran.randn(2041,2041)*sig_1+bias_1+129.0#2300
+        b_arrayf_1[0:2039,0:2039]=ran.randn(2039,2039)*sig_1+bias_1+35.0#2206
+        b_arrayf_1[2039:4080,0:2039]=ran.randn(2041,2039)*sig_1+bias_1+0.0#2171       
+        b_arrayf_1[0:2039,2039:4080]=ran.randn(2039,2041)*sig_1+bias_1-30.0#2141
+        b_arrayf_1[2039:4080,2039:4080]=ran.randn(2041,2041)*sig_1+bias_1+129.0#2300
+        b1_arrayf_1=ran.randn(4080,4080)*sig_1+2.0
     if type == "red":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_1[0:2059,0:2039]=arrayf_1[0:2059,0:2039]/gain_1[0]+ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
-        arrayf_1[2059:4120,0:2039]=arrayf_1[2059:4120,0:2039]/gain_1[1]+ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
-        arrayf_1[0:2059,2039:4080]=arrayf_1[0:2059,2039:4080]/gain_1[2]+ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
-        arrayf_1[2059:4120,2039:4080]=arrayf_1[2059:4120,2039:4080]/gain_1[3]+ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b_arrayf_1[0:2059,0:2039]=ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
-        b_arrayf_1[2059:4120,0:2039]=ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
-        b_arrayf_1[0:2059,2039:4080]=ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
-        b_arrayf_1[2059:4120,2039:4080]=ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b1_arrayf_1=ran.randn(4120,4080)*sig_1+2.0
+        arrayf_1[0:2039,0:2039]=arrayf_1[0:2039,0:2039]/gain_1[0]+ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
+        arrayf_1[2039:4080,0:2039]=arrayf_1[2039:4080,0:2039]/gain_1[1]+ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
+        arrayf_1[0:2039,2039:4080]=arrayf_1[0:2039,2039:4080]/gain_1[2]+ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
+        arrayf_1[2039:4080,2039:4080]=arrayf_1[2039:4080,2039:4080]/gain_1[3]+ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#274
+        b_arrayf_1[0:2039,0:2039]=ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
+        b_arrayf_1[2039:4080,0:2039]=ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
+        b_arrayf_1[0:2039,2039:4080]=ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
+        b_arrayf_1[2039:4080,2039:4080]=ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        b1_arrayf_1=ran.randn(4080,4080)*sig_1+2.0
     if type == "ir":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_1[0:2059,0:2039]=arrayf_1[0:2059,0:2039]/gain_1[0]+ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
-        arrayf_1[2059:4120,0:2039]=arrayf_1[2059:4120,0:2039]/gain_1[1]+ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
-        arrayf_1[0:2059,2039:4080]=arrayf_1[0:2059,2039:4080]/gain_1[2]+ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
-        arrayf_1[2059:4120,2039:4080]=arrayf_1[2059:4120,2039:4080]/gain_1[3]+ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b_arrayf_1[0:2059,0:2039]=ran.randn(2059,2039)*sig_1+bias_1+5.0#+2495-4.0
-        b_arrayf_1[2059:4120,0:2039]=ran.randn(2061,2039)*sig_1+bias_1-4.0#2490-4.0
-        b_arrayf_1[0:2059,2039:4080]=ran.randn(2059,2041)*sig_1+bias_1+55.0#+2545-4.0
-        b_arrayf_1[2059:4120,2039:4080]=ran.randn(2061,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
-        b1_arrayf_1=ran.randn(4120,4080)*sig_1+2.0    
+        arrayf_1[0:2039,0:2039]=arrayf_1[0:2039,0:2039]/gain_1[0]+ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
+        arrayf_1[2039:4080,0:2039]=arrayf_1[2039:4080,0:2039]/gain_1[1]+ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
+        arrayf_1[0:2039,2039:4080]=arrayf_1[0:2039,2039:4080]/gain_1[2]+ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
+        arrayf_1[2039:4080,2039:4080]=arrayf_1[2039:4080,2039:4080]/gain_1[3]+ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#27
+        b_arrayf_1[0:2039,0:2039]=ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
+        b_arrayf_1[2039:4080,0:2039]=ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
+        b_arrayf_1[0:2039,2039:4080]=ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
+        b_arrayf_1[2039:4080,2039:4080]=ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        b1_arrayf_1=ran.randn(4080,4080)*sig_1+2.0    
     
-    arrayf_1=arrayf_1.T
-    b_arrayf_1=b_arrayf_1.T
-    b1_arrayf_1=b1_arrayf_1.T
-    f_arrayf_1=f_arrayf_1.T
     
     sycall('mkdir -p '+dir1+'lvm')        
-    dir0='lvm/'+str(mjd)#+'/'+plate.split('-')[0]#+'-'+mjd        
+    dir0='lvm/'+str(mjd)        
     sycall('mkdir -p '+dir1+'lvm/'+str(mjd))
     #sycall('mkdir -p '+dir1+dir0)        
     dir0f=dir0+'/raw_mock'
     sycall('mkdir -p '+dir1+dir0f)  
     dir0f=dir0f+'/'
-    arrayf_1=cosmic_rays(arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
+    
+    arrayf_1=cosmic_rays(arrayf_1,n_cr=n_cr,d_cr=d_cr)
+    #b_arrayf_1=cosmic_rays(b_arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
+    #b1_arrayf_1=cosmic_rays(b1_arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
+    
+    #DEFINE THE BIASSEC
+    arrayf_2=np.zeros([nf+bias_r+bias_r,ng])
+    b_arrayf_2=np.zeros([nf+bias_r+bias_r,ng])
+    b1_arrayf_2=np.zeros([nf+bias_r+bias_r,ng])
+    
+    arrayf_2[0:2039,0:4080]=arrayf_1[0:2039,0:4080]
+    arrayf_2[2079:4120,0:4080]=arrayf_1[2039:4080,0:4080]
+    b_arrayf_2[0:2039,0:4080]=b_arrayf_1[0:2039,0:4080]
+    b_arrayf_2[2079:4120,0:4080]=b_arrayf_1[2039:4080,0:4080]
+    b1_arrayf_2[0:2039,0:4080]=b1_arrayf_1[0:2039,0:4080]
+    b1_arrayf_2[2079:4120,0:4080]=b1_arrayf_1[2039:4080,0:4080]
+    
+    if type == "blue":
+        bias_1=2171.0
+        sig_1=2.0*fc[0]*0.56
+        gain_1=[1.048, 1.048, 1.018, 1.006]
+        arrayf_2[2039:2059,0:2039]=ran.randn(20,2039)*sig_1+bias_1+35.0-17
+        arrayf_2[2059:2079,0:2039]=ran.randn(20,2039)*sig_1+bias_1+0.0-17
+        arrayf_2[2039:2059,2039:4080]=ran.randn(20,2041)*sig_1+bias_1-30.0-17
+        arrayf_2[2059:2079,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+129.0-17
+    if type == "red":
+        bias_1=2120.0
+        sig_1=2.0*fc[0]*0.56
+        gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
+        arrayf_2[2039:2059,0:2039]=ran.randn(20,2039)*sig_1+bias_1+5.0-17
+        arrayf_2[2059:2079,0:2039]=ran.randn(20,2039)*sig_1+bias_1-4.0-17
+        arrayf_2[2039:2059,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+55.0-17
+        arrayf_2[2059:2079,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+100.0-17
+    if type == "ir":
+        bias_1=2120.0
+        sig_1=2.0*fc[0]*0.56
+        gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
+        arrayf_2[2039:2059,0:2039]=ran.randn(20,2039)*sig_1+bias_1+5.0-17
+        arrayf_2[2059:2079,0:2039]=ran.randn(20,2039)*sig_1+bias_1-4.0-17
+        arrayf_2[2039:2059,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+55.0-17
+        arrayf_2[2059:2079,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+100.0-17
+        
+    arrayf_1=arrayf_2.T
+    b_arrayf_1=b_arrayf_2.T
+    b1_arrayf_1=b1_arrayf_2.T
+    f_arrayf_1=f_arrayf_1.T
+        
+    
+    arrayf_1=arrayf_1-32768.0
     arrayf_1[np.where(arrayf_1 > 32767)]=32767.0
     arrayf_1=np.array(arrayf_1,dtype='int16')
     
-    #b_arrayf_1=cosmic_rays(b_arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
     b_arrayf_1=b_arrayf_1-32768.0
     b_arrayf_1[np.where(b_arrayf_1 > 32767)]=32767.0
     b_arrayf_1=np.array(b_arrayf_1,dtype='int16')
     
-    #b1_arrayf_1=cosmic_rays(b1_arrayf_1,n_cr=n_cr,d_cr=d_cr)-32768.0
     #b1_arrayf_1=b1_arrayf_1-32768.0
     #b1_arrayf_1[np.where(b1_arrayf_1 > 32767)]=32767.0
     b1_arrayf_1=np.array(b1_arrayf_1,dtype='int16')
@@ -621,7 +665,7 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
     h=h1.header
     h["NAXIS"]=2 
     h["NAXIS1"]=ng
-    h["NAXIS2"]=nf
+    h["NAXIS2"]=nf+bias_r+bias_r
     h=row_data_header_bhm(h,plate,mjd,exp,ty+'',flb=flb,expt=expt,ra=ra0,dec=dec0,expof=expof)
     hlist=fits.HDUList([h1])
     hlist.update_extend()
@@ -692,7 +736,11 @@ def row_data_header_bhm(h,plate,mjd,exp,typ,flb='s',ra=0.0,dec=0.0,azim=180.0,al
     h["SLINES"]  = 'NONE    '                                                            
     h["PIXERR"]  = 'NONE    '                                                            
     h["PLINES"]  = 'NONE    '                                                            
-    h["PFERR"]   = 'NONE    '                                                            
+    h["PFERR"]   = 'NONE    '     
+    h['DETSIZE'] = ('[1:4080, 1:4080]','Detector size (1-index)')                      
+    h['CCDSEC']  = ('[1:4080, 1:4080]','Region of CCD read (1-index)')                   
+    h['BIASSEC'] = ('[2021:2060, 1:4080]','Bias section (1-index)')                        
+    h['TRIMSEC'] = ('[1:4080, 1:4080]','Section of useful data (1-index)') 
     h["DIDFLUSH"]= (True ,'CCD was flushed before integration')          
     h["FLAVOR"]  = (flab,'exposure type, SDSS spectro style')            
     h["MJD"]     = (np.int(mjd) ,'APO fMJD day at start of exposure')          
@@ -829,6 +877,10 @@ def row_data_header2(h,mjd):
     h['SLINES']  = 'NONE    '                                                            
     h['PIXERR']  = 'NONE    '                                                            
     h['PLINES']  = 'NONE    '                                                            
+    h['DETSIZE'] = ('[1:4080, 1:4080]','Detector size (1-index)')                      
+    h['CCDSEC']  = ('[1:4080, 1:4080]','Region of CCD read (1-index)')                   
+    h['BIASSEC'] = ('[2021:2060, 1:4080]','Bias section (1-index)')                        
+    h['TRIMSEC'] = ('[1:4080, 1:4080]','Section of useful data (1-index)') 
     h['FLAVOR']  = ('bias    ','exposure type, SDSS spectro style')              
     h['BOSSVER'] = ('branch_jme-rewrite+svn105840M','ICC version')                         
     h['MJD']     = (np.int(mjd),'APO MJD day at start of exposure')  
