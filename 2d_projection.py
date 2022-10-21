@@ -448,10 +448,11 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
             fib_id[i]=idf[nt2][0]
     fib_idF=np.zeros(nfib,dtype=int)
     fib_idF[:]=-1
-    for i in range(0, nfib):
-        nt=np.where(fib_id == i+1)[0]
-        if len(nt > 0):
-            fib_idF[i]=fibid[nt][0]
+    if not 'b' in flb:#if bias type then do not assign any detection.
+        for i in range(0, nfib):
+            nt=np.where(fib_id == i+1)[0]
+            if len(nt > 0):
+                fib_idF[i]=fibid[nt][0]
     
     #Wavelenght solution
     pixel=np.arange(0,len(wave_s))
@@ -467,7 +468,7 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
             spect=spec[fib_idF[i],:]
             tta=0
         else:
-            spect=spec[:,0]*0
+            spect=spec[0,:]*0
             spect[:]=0
             tta=1
         nx=len(spect)
@@ -493,8 +494,8 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         dy=np.int(np.round(dg))
         off=dy-dg
         dc=10.0
-        #tta=1
-        #nxt=int(dc*2+1)
+        #tta=2
+        nxt=int(dc*2+1)
         if tta == 2:
             nxt=np.int(dc*2+1)
             x_t=np.arange(nxt)*1.0-dc+off
@@ -502,6 +503,10 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
             ds_t=np.array([dsi]*nxt).T
             At=np.array([spect]*nxt).T
             spec_t=np.exp(-0.5*(x_t/ds_t)**2.0)/(np.sqrt(2.0*np.pi)*ds_t)*At
+        
+        #import matplotlib.pyplot as plt
+        #plt.plot(Pix,np.nanmean(spec_t,axis=1),'-',color='blue')
+        #plt.show()
         
         #dtt=0
         dtt=int(dc)
@@ -532,10 +537,19 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         
         #dtt=int(dc)
         #spec_res=np.zeros([int(nf-dx+dtt),int(dc*2+1)])
+        if not tta == 1:
             for j in range(0, int(nf-dx+dtt)):
                 n1=np.where((Pix >= j) & (Pix < j+1))[0]
-                val=np.nansum(spec_t[n1,:],axis=0)
-                spec_res[j,:]=val    
+                if len(n1) > 0:
+                    val=np.nanmean(spec_t[n1,:],axis=0)
+                else:
+                    val=0
+                spec_res[j,:]=val  
+            
+        #import matplotlib.pyplot as plt
+        #plt.plot(np.nanmean(spec_res,axis=1),'-',color='blue')
+        #plt.show()
+        #sys.exit()    
         
         y1=0
         y2=nxt
@@ -552,45 +566,45 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]=spec_res+arrayf_1[dx+x1-dtt:dx+x2+dtt,dy+y1:dy+y2]
     
     nf=4080#4080#4224
-    ng=4080#4120#4352
+    ng=4080#4120#4352    
     if type == "blue":
         bias_1=2171.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.048, 1.048, 1.018, 1.006]
-        arrayf_1[0:2039,0:2039]=arrayf_1[0:2039,0:2039]/gain_1[0]+ran.randn(2039,2039)*sig_1+bias_1+35.0#2206  0:2111,0:2175
-        arrayf_1[2039:4080,0:2039]=arrayf_1[2039:4080,0:2039]/gain_1[1]+ran.randn(2041,2039)*sig_1+bias_1+0.0#2171       
-        arrayf_1[0:2039,2039:4080]=arrayf_1[0:2039,2039:4080]/gain_1[2]+ran.randn(2039,2041)*sig_1+bias_1-30.0#2141
-        arrayf_1[2039:4080,2039:4080]=arrayf_1[2039:4080,2039:4080]/gain_1[3]+ran.randn(2041,2041)*sig_1+bias_1+129.0#2300
-        b_arrayf_1[0:2039,0:2039]=ran.randn(2039,2039)*sig_1+bias_1+35.0#2206
-        b_arrayf_1[2039:4080,0:2039]=ran.randn(2041,2039)*sig_1+bias_1+0.0#2171       
-        b_arrayf_1[0:2039,2039:4080]=ran.randn(2039,2041)*sig_1+bias_1-30.0#2141
-        b_arrayf_1[2039:4080,2039:4080]=ran.randn(2041,2041)*sig_1+bias_1+129.0#2300
+        arrayf_1[0:2040,0:2040]=arrayf_1[0:2040,0:2040]/gain_1[0]+ran.randn(2040,2040)*sig_1+bias_1+35.0#2206  0:2111,0:2175
+        arrayf_1[2040:4080,0:2040]=arrayf_1[2040:4080,0:2040]/gain_1[1]+ran.randn(2040,2040)*sig_1+bias_1+0.0#2171       
+        arrayf_1[0:2040,2040:4080]=arrayf_1[0:2040,2040:4080]/gain_1[2]+ran.randn(2040,2040)*sig_1+bias_1-30.0#2141
+        arrayf_1[2040:4080,2040:4080]=arrayf_1[2040:4080,2040:4080]/gain_1[3]+ran.randn(2040,2040)*sig_1+bias_1+129.0#2300
+        b_arrayf_1[0:2040,0:2040]=ran.randn(2040,2040)*sig_1+bias_1+35.0#2206
+        b_arrayf_1[2040:4080,0:2040]=ran.randn(2040,2040)*sig_1+bias_1+0.0#2171       
+        b_arrayf_1[0:2040,2040:4080]=ran.randn(2040,2040)*sig_1+bias_1-30.0#2141
+        b_arrayf_1[2040:4080,2040:4080]=ran.randn(2040,2040)*sig_1+bias_1+129.0#2300
         b1_arrayf_1=ran.randn(4080,4080)*sig_1+2.0
     if type == "red":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_1[0:2039,0:2039]=arrayf_1[0:2039,0:2039]/gain_1[0]+ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
-        arrayf_1[2039:4080,0:2039]=arrayf_1[2039:4080,0:2039]/gain_1[1]+ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
-        arrayf_1[0:2039,2039:4080]=arrayf_1[0:2039,2039:4080]/gain_1[2]+ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
-        arrayf_1[2039:4080,2039:4080]=arrayf_1[2039:4080,2039:4080]/gain_1[3]+ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#274
-        b_arrayf_1[0:2039,0:2039]=ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
-        b_arrayf_1[2039:4080,0:2039]=ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
-        b_arrayf_1[0:2039,2039:4080]=ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
-        b_arrayf_1[2039:4080,2039:4080]=ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        arrayf_1[0:2040,0:2040]=arrayf_1[0:2040,0:2040]/gain_1[0]+ran.randn(2040,2040)*sig_1+bias_1+5.0#+2495-4.0
+        arrayf_1[2040:4080,0:2040]=arrayf_1[2040:4080,0:2040]/gain_1[1]+ran.randn(2040,2040)*sig_1+bias_1-4.0#2490-4.0
+        arrayf_1[0:2040,2040:4080]=arrayf_1[0:2040,2040:4080]/gain_1[2]+ran.randn(2040,2040)*sig_1+bias_1+55.0#+2545-4.0
+        arrayf_1[2040:4080,2040:4080]=arrayf_1[2040:4080,2040:4080]/gain_1[3]+ran.randn(2040,2040)*sig_1+bias_1+100.0#246.0#274
+        b_arrayf_1[0:2040,0:2040]=ran.randn(2040,2040)*sig_1+bias_1+5.0-17#+2495-4.0
+        b_arrayf_1[2040:4080,0:2040]=ran.randn(2040,2040)*sig_1+bias_1-4.0-17#2490-4.0
+        b_arrayf_1[0:2040,2040:4080]=ran.randn(2040,2040)*sig_1+bias_1+55.0-17#+2545-4.0
+        b_arrayf_1[2040:4080,2040:4080]=ran.randn(2040,2040)*sig_1+bias_1+100.0-17#246.0#2740-4.0
         b1_arrayf_1=ran.randn(4080,4080)*sig_1+2.0
     if type == "ir":
         bias_1=2120.0#2490.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_1[0:2039,0:2039]=arrayf_1[0:2039,0:2039]/gain_1[0]+ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
-        arrayf_1[2039:4080,0:2039]=arrayf_1[2039:4080,0:2039]/gain_1[1]+ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
-        arrayf_1[0:2039,2039:4080]=arrayf_1[0:2039,2039:4080]/gain_1[2]+ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
-        arrayf_1[2039:4080,2039:4080]=arrayf_1[2039:4080,2039:4080]/gain_1[3]+ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#27
-        b_arrayf_1[0:2039,0:2039]=ran.randn(2039,2039)*sig_1+bias_1+5.0#+2495-4.0
-        b_arrayf_1[2039:4080,0:2039]=ran.randn(2041,2039)*sig_1+bias_1-4.0#2490-4.0
-        b_arrayf_1[0:2039,2039:4080]=ran.randn(2039,2041)*sig_1+bias_1+55.0#+2545-4.0
-        b_arrayf_1[2039:4080,2039:4080]=ran.randn(2041,2041)*sig_1+bias_1+100.0#246.0#2740-4.0
+        arrayf_1[0:2040,0:2040]=arrayf_1[0:2040,0:2040]/gain_1[0]+ran.randn(2040,2040)*sig_1+bias_1+5.0#+2495-4.0
+        arrayf_1[2040:4080,0:2040]=arrayf_1[2040:4080,0:2040]/gain_1[1]+ran.randn(2040,2040)*sig_1+bias_1-4.0#2490-4.0
+        arrayf_1[0:2040,2040:4080]=arrayf_1[0:2040,2040:4080]/gain_1[2]+ran.randn(2040,2040)*sig_1+bias_1+55.0#+2545-4.0
+        arrayf_1[2040:4080,2040:4080]=arrayf_1[2040:4080,2040:4080]/gain_1[3]+ran.randn(2040,2040)*sig_1+bias_1+100.0#246.0#27
+        b_arrayf_1[0:2040,0:2040]=ran.randn(2040,2040)*sig_1+bias_1+5.0-17#+2495-4.0
+        b_arrayf_1[2040:4080,0:2040]=ran.randn(2040,2040)*sig_1+bias_1-4.0-17#2490-4.0
+        b_arrayf_1[0:2040,2040:4080]=ran.randn(2040,2040)*sig_1+bias_1+55.0-17#+2545-4.0
+        b_arrayf_1[2040:4080,2040:4080]=ran.randn(2040,2040)*sig_1+bias_1+100.0-17#246.0#2740-4.0
         b1_arrayf_1=ran.randn(4080,4080)*sig_1+2.0    
     
     
@@ -611,37 +625,37 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
     b_arrayf_2=np.zeros([nf+bias_r+bias_r,ng])
     b1_arrayf_2=np.zeros([nf+bias_r+bias_r,ng])
     
-    arrayf_2[0:2039,0:4080]=arrayf_1[0:2039,0:4080]
-    arrayf_2[2079:4120,0:4080]=arrayf_1[2039:4080,0:4080]
-    b_arrayf_2[0:2039,0:4080]=b_arrayf_1[0:2039,0:4080]
-    b_arrayf_2[2079:4120,0:4080]=b_arrayf_1[2039:4080,0:4080]
-    b1_arrayf_2[0:2039,0:4080]=b1_arrayf_1[0:2039,0:4080]
-    b1_arrayf_2[2079:4120,0:4080]=b1_arrayf_1[2039:4080,0:4080]
+    arrayf_2[0:2040,0:4080]=arrayf_1[0:2040,0:4080]
+    arrayf_2[2080:4120,0:4080]=arrayf_1[2040:4080,0:4080]
+    b_arrayf_2[0:2040,0:4080]=b_arrayf_1[0:2040,0:4080]
+    b_arrayf_2[2080:4120,0:4080]=b_arrayf_1[2040:4080,0:4080]
+    b1_arrayf_2[0:2040,0:4080]=b1_arrayf_1[0:2040,0:4080]
+    b1_arrayf_2[2080:4120,0:4080]=b1_arrayf_1[2040:4080,0:4080]
     
     if type == "blue":
         bias_1=2171.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.048, 1.048, 1.018, 1.006]
-        arrayf_2[2039:2059,0:2039]=ran.randn(20,2039)*sig_1+bias_1+35.0-17
-        arrayf_2[2059:2079,0:2039]=ran.randn(20,2039)*sig_1+bias_1+0.0-17
-        arrayf_2[2039:2059,2039:4080]=ran.randn(20,2041)*sig_1+bias_1-30.0-17
-        arrayf_2[2059:2079,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+129.0-17
+        arrayf_2[2040:2060,0:2040]=ran.randn(20,2040)*sig_1+bias_1+35.0-17
+        arrayf_2[2060:2080,0:2040]=ran.randn(20,2040)*sig_1+bias_1+0.0-17
+        arrayf_2[2040:2060,2040:4080]=ran.randn(20,2040)*sig_1+bias_1-30.0-17
+        arrayf_2[2060:2080,2040:4080]=ran.randn(20,2040)*sig_1+bias_1+129.0-17
     if type == "red":
         bias_1=2120.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_2[2039:2059,0:2039]=ran.randn(20,2039)*sig_1+bias_1+5.0-17
-        arrayf_2[2059:2079,0:2039]=ran.randn(20,2039)*sig_1+bias_1-4.0-17
-        arrayf_2[2039:2059,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+55.0-17
-        arrayf_2[2059:2079,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+100.0-17
+        arrayf_2[2040:2060,0:2040]=ran.randn(20,2040)*sig_1+bias_1+5.0-17
+        arrayf_2[2060:2080,0:2040]=ran.randn(20,2040)*sig_1+bias_1-4.0-17
+        arrayf_2[2040:2060,2040:4080]=ran.randn(20,2040)*sig_1+bias_1+55.0-17
+        arrayf_2[2060:2080,2040:4080]=ran.randn(20,2040)*sig_1+bias_1+100.0-17
     if type == "ir":
         bias_1=2120.0
         sig_1=2.0*fc[0]*0.56
         gain_1=[1.9253, 1.5122, 1.4738, 1.5053]
-        arrayf_2[2039:2059,0:2039]=ran.randn(20,2039)*sig_1+bias_1+5.0-17
-        arrayf_2[2059:2079,0:2039]=ran.randn(20,2039)*sig_1+bias_1-4.0-17
-        arrayf_2[2039:2059,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+55.0-17
-        arrayf_2[2059:2079,2039:4080]=ran.randn(20,2041)*sig_1+bias_1+100.0-17
+        arrayf_2[2040:2060,0:2040]=ran.randn(20,2040)*sig_1+bias_1+5.0-17
+        arrayf_2[2060:2080,0:2040]=ran.randn(20,2040)*sig_1+bias_1-4.0-17
+        arrayf_2[2040:2060,2040:4080]=ran.randn(20,2040)*sig_1+bias_1+55.0-17
+        arrayf_2[2060:2080,2040:4080]=ran.randn(20,2040)*sig_1+bias_1+100.0-17
         
     arrayf_1=arrayf_2.T
     b_arrayf_1=b_arrayf_2.T
@@ -685,7 +699,7 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         h=row_data_header2(h,mjd)
         hlist=fits.HDUList([h1])
         hlist.update_extend()
-        out_fit=dir1+'lvm/biases/lvm_pixbias-'+str(mjd)+'-'+ty+cam+'.fits' 
+        out_fit=dir1+'lvm/biases/lvm_pixbias-'+id_str(exp,n_z=8)+'-'+str(mjd)+'-'+ty+cam+'.fits' 
         wfits_ext(out_fit,hlist)
         sycall('gzip -f '+out_fit)
     
@@ -710,7 +724,7 @@ def raw_exp_bhm(spec,fibid,ring,position,base_name,wave_s,wave,fc=[1.0,1.0],n_cr
         h=h1.header
         hlist=fits.HDUList([h1])
         hlist.update_extend()
-        out_fit=dir1+'lvm/biases/pixbiasave-00001'+'-'+ty+cam+'.fits'
+        out_fit=dir1+'lvm/biases/pixbiasave-'+id_str(exp,n_z=8)+'-'+ty+cam+'.fits'
         wfits_ext(out_fit,hlist)
         sycall('gzip -f '+out_fit)
 
@@ -723,7 +737,9 @@ def row_data_header_bhm(h,plate,mjd,exp,typ,flb='s',ra=0.0,dec=0.0,azim=180.0,al
         expt=4.0
     elif flb == 'f':
         flab='flat    '  
-        expt=25.0                                        
+        expt=25.0   
+    elif flb == 'b':
+        flab='bias    '   
     h["TELESCOP"]= 'SDSS 2-5m'                                                           
     h["FILENAME"]= 'sdR-'+typ+'-'+id_str(exp,n_z=8)+'.fit'                                                 
     h["CAMERAS"] = typ+'      '                                                            
@@ -813,7 +829,12 @@ def row_data_header_bhm(h,plate,mjd,exp,typ,flb='s',ra=0.0,dec=0.0,azim=180.0,al
         h["FF"]      = ('0 0 0 0 ','FF lamps 1:on 0:0ff')                       
         h["NE"]      = ('0 0 0 0 ','NE lamps 1:on 0:0ff')                          
         h["HGCD"]    = ('0 0 0 0 ','HGCD lamps 1:on 0:0ff')                          
-        h["FFS"]     = ('0 0 0 0 0 0 0 0','Flatfield Screen 1:closed 0:open')                     
+        h["FFS"]     = ('0 0 0 0 0 0 0 0','Flatfield Screen 1:closed 0:open')    
+    elif 'bias    ' in flab:
+        h["FF"]      = ('0 0 0 0 ','FF lamps 1:on 0:0ff')                       
+        h["NE"]      = ('0 0 0 0 ','NE lamps 1:on 0:0ff')                          
+        h["HGCD"]    = ('0 0 0 0 ','HGCD lamps 1:on 0:0ff')                          
+        h["FFS"]     = ('0 0 0 0 0 0 0 0','Flatfield Screen 1:closed 0:open')        
     elif 'arc     ' in flab:
         h["FF"]      = ('0 0 0 0 ','FF lamps 1:on 0:0ff')                       
         h["NE"]      = ('1 1 1 1 ','NE lamps 1:on 0:0ff')                          
